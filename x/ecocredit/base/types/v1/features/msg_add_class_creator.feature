@@ -1,0 +1,2 @@
+Feature: MsgAddClassCreator
+

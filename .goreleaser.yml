@@ -1,0 +1,142 @@
+project_name: regen-ledger
+
+env:
+  - CGO_ENABLED=1
+  # Ensure COSMWASM_VERSION is passed correctly via Makefile/environment
+  - COSMWASM_VERSION={{ .Env.COSMWASM_VERSION }}
+
+builds:
+  - id: regen-linux-amd64
+    main: ./cmd/regen
+    binary: regend
+    hooks:
+      pre:
+        - wget https://github.com/CosmWasm/wasmvm/releases/download/{{ .Env.COSMWASM_VERSION }}/libwasmvm_muslc.x86_64.a -O /usr/lib/x86_64-linux-gnu/libwasmvm_muslc.x86_64.a
+    goos:
+      - linux
+    goarch:
+      - amd64
+    env:
+      - CC=x86_64-linux-gnu-gcc
+    flags:
+      - -mod=readonly
+      - -trimpath
+    ldflags:
+      - -X github.com/cosmos/cosmos-sdk/version.Name=regen
+      - -X github.com/cosmos/cosmos-sdk/version.AppName=regend
+      - -X github.com/cosmos/cosmos-sdk/version.Version={{ .Version }}
+      - -X github.com/cosmos/cosmos-sdk/version.Commit={{ .Commit }}
+      - -X github.com/cosmos/cosmos-sdk/version.BuildTags=netgo,ledger,muslc,osusergo
+      - -w -s
+      - -linkmode=external
+      - -extldflags '-Wl,-z,muldefs -static -lm'
+    tags:
+      - netgo
+      - ledger
+      - muslc
+      - osusergo
+
+  - id: regen-linux-arm64
+    main: ./cmd/regen
+    binary: regend
+    hooks:
+      pre:
+        - wget https://github.com/CosmWasm/wasmvm/releases/download/{{ .Env.COSMWASM_VERSION }}/libwasmvm_muslc.aarch64.a -O /usr/lib/aarch64-linux-gnu/libwasmvm_muslc.aarch64.a
+    goos:
+      - linux
+    goarch:
+      - arm64
+    env:
+      - CC=aarch64-linux-gnu-gcc
+    flags:
+      - -mod=readonly
+      - -trimpath
+    ldflags:
+      - -X github.com/cosmos/cosmos-sdk/version.Name=regen
+      - -X github.com/cosmos/cosmos-sdk/version.AppName=regend
+      - -X github.com/cosmos/cosmos-sdk/version.Version={{ .Version }}
+      - -X github.com/cosmos/cosmos-sdk/version.Commit={{ .Commit }}
+      - -X github.com/cosmos/cosmos-sdk/version.BuildTags=netgo,ledger,muslc,osusergo
+      - -w -s
+      - -linkmode=external
+      - -extldflags '-Wl,-z,muldefs -static -lm'
+    tags:
+      - netgo
+      - ledger
+      - muslc
+      - osusergo
+
+archives:
+  - id: zipped
+    builds:
+      - regen-linux-amd64
+      - regen-linux-arm64
+    name_template: "{{.ProjectName}}-{{ .Version }}-{{ .Os }}-{{ .Arch }}"
+    format: tar.gz
+    files:
+      - none*
+  - id: binaries
+    builds:
+      - regen-linux-amd64
+      - regen-linux-arm64
+    name_template: "{{.ProjectName}}-{{ .Version }}-{{ .Os }}-{{ .Arch }}"
+    format: binary
+    files:
+      - none*
+
+checksum:
+  name_template: "sha256sum.txt"
+  algorithm: sha256
+
+# Docs: https://goreleaser.com/customization/changelog/
+changelog:
+  skip: true
+
+# Docs: https://goreleaser.com/customization/release/
+release:
+  github:
+    owner: regen-network
+    name: regen-ledger
+  replace_existing_draft: true
+  header: |
+    Regen Ledger Release v{{ .Version }}
+
+    ## Changelog
+
+    See the full changelog [here](https://github.com/regen-network/regen-ledger/blob/v{{ .Version }}/CHANGELOG.md)
+
+    ## ⚡️ Binaries
+
+    Binaries for Linux (amd64 and arm64) are available below.
+
+    #### 🔨 Build from source
+
+    If you prefer to build from source, you can use the following commands:
+
+    ````bash
+    git clone https://github.com/regen-network/regen-ledger
+    cd regen-ledger && git checkout v{{ .Version }}
+    make install
+    ````
+
+    ## 🐳 Run with Docker
+
+    (Add relevant Docker instructions for regen-ledger if applicable)
+
+  name_template: "Regen Ledger v{{.Version}} 🌱"
+  mode: replace
+  draft: true
+
+# Docs: https://goreleaser.com/customization/announce/
+# We could automatically announce the release in
+# - discord
+# - slack
+# - twitter
+# - webhooks
+# - telegram
+# - reddit
+#
+# announce:
+  # discord:
+  #   enabled: true
+  #   message_template: 'New {{.Tag}} is out!'

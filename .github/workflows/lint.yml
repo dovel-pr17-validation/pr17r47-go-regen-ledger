@@ -1,0 +1,91 @@
+name: Lint
+
+# **What it does**: Runs go linter when go files have been modified
+# and proto linters when proto files have been modified.
+#
+# **Why we have it**: Ensures all go files and proto files are
+# properly formatted according to lint configuration files.
+#
+# **What does it impact**: Code quality.
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - release/v*
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  golangci:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+    strategy:
+      matrix:
+        module: ["app", "types", "x/data", "x/ecocredit"]
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: technote-space/get-diff-action@v6
+        id: git-diff-app
+        with:
+          PATTERNS: |
+            app/**/**.go
+            go.mod
+            go.sum
+        if: matrix.module == 'app'
+
+      - uses: technote-space/get-diff-action@v6
+        id: git-diff-types
+        with:
+          PATTERNS: |
+            types/**/**.go
+            types/go.mod
+            types/go.sum
+        if: matrix.module == 'types'
+
+      - uses: technote-space/get-diff-action@v6
+        id: git-diff-data
+        with:
+          PATTERNS: |
+            x/data/**/**.go
+            x/data/go.mod
+            x/data/go.sum
+        if: matrix.module == 'x/data'
+
+      - uses: technote-space/get-diff-action@v6
+        id: git-diff-ecocredit
+        with:
+          PATTERNS: |
+            x/ecocredit/**/**.go
+            x/ecocredit/go.mod
+            x/ecocredit/go.sum
+        if: matrix.module == 'x/ecocredit'
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version: '1.26.x'
+        if: env.GIT_DIFF
+
+      - name: Install golangci-lint v2.1.6
+        run: |
+          go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.1.6
+          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
+        if: env.GIT_DIFF
+
+      - name: Run make lint
+        run: make lint
+        if: |
+          (matrix.module == 'app' && steps.git-diff-app.outputs.diff) ||
+          (matrix.module == 'types' && steps.git-diff-types.outputs.diff) ||
+          (matrix.module == 'x/data' && steps.git-diff-data.outputs.diff) ||
+          (matrix.module == 'x/ecocredit' && steps.git-diff-ecocredit.outputs.diff)
+

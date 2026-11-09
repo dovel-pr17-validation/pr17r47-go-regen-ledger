@@ -1,0 +1,175 @@
+# Install Regen
+
+The `regen` binary serves as the node client and the application client. In other words, the `regen` binary can be used to both run a node and interact with it.
+
+If you have not already, check out [Command-Line Interface](../interfaces.md#command-line-interface) for an introduction.
+
+## Build From Source
+
+The following instructions are for building and installing the `regen` binary from its source code. This is the recommended way for most users. If you do not have Git, Make, and Go installed, and you would prefer not to install them, you can install the `regen` binary using a [pre-built package](#pre-built-package).
+
+In the following examples we use the latest available version of Regen Ledger (`v7.3.1`), which is the same version used by node operators running [Regen Mainnet](regen-mainnet.md) and [Regen Testnet](regen-testnet.md).
+
+### Prerequisites
+
+In order to build the `regen` binary from source, you'll need the following: 
+
+- [Git](https://git-scm.com) `>=2` .
+- [Make](https://www.gnu.org/software/make/) `>=4`
+- [Go](https://golang.org/) `1.26.10`, or `>=1.27.3`
+
+*Note: Install Go `1.26.10` from [Go Downloads](https://go.dev/dl/), or use Go `1.27.3` or later. Go `1.21` to `1.26.9` can also download `1.26.10` automatically when you build, unless automatic toolchain switching is turned off (`GOTOOLCHAIN=local`, which some Linux distribution packages and Docker images set). Go `1.27.0` to `1.27.2` build with themselves instead, so update them to `1.27.3` or later.*
+
+*Note: If you are new to go and installing it for the first time, make sure you include the following `PATH` export in your bash profile: `export PATH=$(go env GOPATH)/bin:$PATH`.*
+
+### Source Code
+
+Clone the `regen-ledger` repository:
+
+```bash
+git clone https://github.com/regen-network/regen-ledger
+```
+
+Change to the `regen-ledger` directory:
+
+```bash
+cd regen-ledger
+```
+
+Check out the latest stable version:
+
+```bash
+git checkout v7.3.1
+```
+
+### Build Only
+
+The following command only builds the `regen` binary. After running the command, the built binary will be available in a `build` directory within the current directory.
+
+Build the `regen` binary:
+
+```bash
+make build
+```
+
+Check to make sure the build was successful:
+
+```bash
+./build/regen version
+```
+
+You should see the following:
+
+```bash
+v7.3.1
+```
+
+Are you not seeing the above?
+
+- Check the version of your source code using `git status` and try rerunning `git checkout` to see if there are any errors that might point to the problem.
+
+### Build and Install
+
+The following command builds and installs the `regen` binary using `go install` under the hood. After running the command, a separate built binary (separate from the binary in your `build` directory) will be available in your go `bin` directory and therefore available globally.
+
+Build and install the `regen` binary:
+
+```bash
+make install
+```
+
+Check to make sure the installation was successful:
+
+```bash
+regen version
+```
+
+You should see the following:
+
+```bash
+v7.3.1
+```
+
+Are you not seeing the above?
+
+- Check the version of your source code using `git status` and try rerunning `git checkout` to see if there are any errors that might point to the problem.
+- You may have previously installed the `regen` binary and placed it within `/usr/local/bin`. To use the version in your go `bin` directory, remove the `regen` binary from this location.
+
+## Pre-Built Package
+
+The following instructions are for installing the `regen` binary using a pre-built package. Packages for different operating systems are provided as release assets included with each release.
+
+### For Linux Distributions
+
+#### Option A: Standalone Binary
+
+Download the binary:
+
+```bash
+curl -LO https://github.com/regen-network/regen-ledger/releases/download/v7.3.1/regen-ledger-7.3.1-linux-amd64
+```
+
+Verify the checksum:
+
+```bash
+sha256sum regen-ledger-7.3.1-linux-amd64
+```
+
+You should see the following:
+
+```bash
+71402f5c3465a425dc3c8cdb92df093ad44e5cf28a6f615cdeee7c4e1a0ecd7d  regen-ledger-7.3.1-linux-amd64
+```
+
+Move the binary to your local bin directory:
+
+```bash
+sudo mv regen-ledger-7.3.1-linux-amd64 /usr/local/bin/regen
+sudo chmod +x /usr/local/bin/regen
+```
+
+#### Option B: Tarball
+
+Download the tarball:
+
+```bash
+curl -LO https://github.com/regen-network/regen-ledger/releases/download/v7.3.1/regen-ledger-7.3.1-linux-amd64.tar.gz
+```
+
+Verify the checksum:
+
+```bash
+sha256sum regen-ledger-7.3.1-linux-amd64.tar.gz
+```
+
+You should see the following:
+
+```bash
+a31d19c26a2f202ba7a39f1e259c1ea688a3a0b1fde991af3ffe4d93eb4d2c87  regen-ledger-7.3.1-linux-amd64.tar.gz
+```
+
+Uncompress the tar.gz file and move the binary:
+
+```bash
+tar -xzf regen-ledger-7.3.1-linux-amd64.tar.gz
+sudo mv regend /usr/local/bin/regen
+sudo chmod +x /usr/local/bin/regen
+```
+
+Check if the installation was successful:
+
+```bash
+regen version
+```
+
+You should see the following:
+
+```bash
+7.3.1
+```
+
+Pre-built binaries report the version without the leading `v`. A binary built from source reports `v7.3.1`.
+
+### Additional Packages
+
+Additional packages and checksums are available under "Assets" on the [Release Page](https://github.com/regen-network/regen-ledger/releases/tag/v7.3.1).

@@ -1,0 +1,57 @@
+package keeper
+
+import (
+	"context"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+
+	types "github.com/regen-network/regen-ledger/x/ecocredit/v4/base/types/v1"
+)
+
+// UpdateClassAdmin updates the admin address for a class.
+// WARNING: this method will forfeit control of the entire class to the provided address.
+// double check your inputs to ensure you do not lose control of the class.
+func (k Keeper) UpdateClassAdmin(ctx context.Context, req *types.MsgUpdateClassAdmin) (*types.MsgUpdateClassAdminResponse, error) {
+	if err := req.ValidateBasic(); err != nil {
+		return nil, err
+	}
+	oldadminBz, err := k.ac.StringToBytes(req.Admin)
+	if err != nil {
+		return nil, sdkerrors.ErrInvalidAddress.Wrapf("admin: %s", err)
+	}
+	reqAddr := sdk.AccAddress(oldadminBz)
+
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+
+	newadminBz, err := k.ac.StringToBytes(req.NewAdmin)
+	if err != nil {
+		return nil, sdkerrors.ErrInvalidAddress.Wrapf("new admin: %s", err)
+	}
+
+	classInfo, err := k.stateStore.ClassTable().GetById(ctx, req.ClassId)
+	if err != nil {
+		return nil, sdkerrors.ErrInvalidRequest.Wrapf(
+			"could not get credit class with id %s: %s", req.ClassId, err,
+		)
+	}
+
+	classAdmin := sdk.AccAddress(classInfo.Admin)
+	if !classAdmin.Equals(reqAddr) {
+		return nil, sdkerrors.ErrUnauthorized.Wrapf(
+			"%s is not the admin of credit class %s", req.Admin, req.ClassId,
+		)
+	}
+	classInfo.Admin = newadminBz
+	if err = k.stateStore.ClassTable().Update(ctx, classInfo); err != nil {
+		return nil, err
+	}
+
+	if err = sdkCtx.EventManager().EmitTypedEvent(&types.EventUpdateClassAdmin{
+		ClassId: req.ClassId,
+	}); err != nil {
+		return nil, err
+	}
+
+	return &types.MsgUpdateClassAdminResponse{}, err
+}

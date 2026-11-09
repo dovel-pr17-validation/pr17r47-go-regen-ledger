@@ -1,0 +1,73 @@
+package simulation
+
+import (
+	"math/rand"
+
+	"github.com/cosmos/cosmos-sdk/baseapp"
+	"github.com/cosmos/cosmos-sdk/client"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
+	"github.com/cosmos/cosmos-sdk/x/simulation"
+
+	"github.com/regen-network/regen-ledger/x/ecocredit/v4"
+	types "github.com/regen-network/regen-ledger/x/ecocredit/v4/base/types/v1"
+	"github.com/regen-network/regen-ledger/x/ecocredit/v4/simulation/utils"
+)
+
+const OpWeightMsgCreateClass = "op_weight_msg_create_class" //nolint:gosec
+
+var TypeMsgCreateClass = sdk.MsgTypeURL(&types.MsgCreateClass{})
+
+const WeightCreateClass = 10
+
+// SimulateMsgCreateClass generates a MsgCreateClass with random values.
+func SimulateMsgCreateClass(txCfg client.TxConfig, ak ecocredit.AccountKeeper, bk ecocredit.BankKeeper,
+	qryClient types.QueryServer,
+) simtypes.Operation {
+	return func(
+		r *rand.Rand, app *baseapp.BaseApp, ctx sdk.Context, accs []simtypes.Account, _ string,
+	) (simtypes.OperationMsg, []simtypes.FutureOperation, error) {
+		admin, _ := simtypes.RandomAcc(r, accs)
+		issuers := randomIssuers(r, accs)
+
+		res, err := qryClient.Params(ctx, &types.QueryParamsRequest{})
+		if err != nil {
+			return simtypes.NoOpMsg(ecocredit.ModuleName, TypeMsgCreateClass, err.Error()), nil, err
+		}
+
+		params := res.Params
+		if params.AllowlistEnabled && !utils.Contains(params.AllowedClassCreators, admin.Address.String()) {
+			return simtypes.NoOpMsg(ecocredit.ModuleName, TypeMsgCreateClass, "not allowed to create credit class"), nil, nil // skip
+		}
+
+		spendable, neg := bk.SpendableCoins(ctx, admin.Address).SafeSub(params.CreditClassFee...)
+		if neg {
+			return simtypes.NoOpMsg(ecocredit.ModuleName, TypeMsgCreateClass, "not enough balance"), nil, nil
+		}
+
+		creditTypes := []string{"C", "BIO"}
+		msg := &types.MsgCreateClass{
+			Admin:            admin.Address.String(),
+			Issuers:          issuers,
+			Metadata:         simtypes.RandStringOfLength(r, 10),
+			CreditTypeAbbrev: creditTypes[r.Intn(len(creditTypes))],
+			Fee:              &params.CreditClassFee[0],
+		}
+
+		txCtx := simulation.OperationInput{
+			R:               r,
+			App:             app,
+			TxGen:           txCfg,
+			Cdc:             nil,
+			Msg:             msg,
+			Context:         ctx,
+			SimAccount:      admin,
+			AccountKeeper:   ak,
+			Bankkeeper:      bk,
+			ModuleName:      ecocredit.ModuleName,
+			CoinsSpentInMsg: spendable,
+		}
+
+		return utils.GenAndDeliverTxWithRandFees(r, txCfg, txCtx)
+	}
+}

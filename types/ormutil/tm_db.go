@@ -1,0 +1,23 @@
+package ormutil
+
+import (
+	dbm "github.com/cosmos/cosmos-db"
+	"github.com/regen-network/regen-ledger/api/v2/orm/types/kv"
+)
+
+func NewStoreAdapter(db dbm.DB) kv.Store {
+	return storeAdapter{db}
+}
+
+// storeAdapter adapts cometbft/cometbft-db -> cosmos-sdk/tm-db Iterator for ORM kv.Store
+type storeAdapter struct {
+	dbm.DB
+}
+
+func (ta storeAdapter) Iterator(start, end []byte) (kv.Iterator, error) {
+	return ta.DB.Iterator(start, end)
+}
+
+func (ta storeAdapter) ReverseIterator(start, end []byte) (kv.Iterator, error) {
+	return ta.DB.ReverseIterator(start, end)
+}

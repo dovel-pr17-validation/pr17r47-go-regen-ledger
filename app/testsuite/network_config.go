@@ -1,0 +1,59 @@
+package testsuite
+
+import (
+	"fmt"
+	"os"
+
+	"cosmossdk.io/log"
+	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
+	dbm "github.com/cosmos/cosmos-db"
+
+	pruningtypes "cosmossdk.io/store/pruning/types"
+
+	"github.com/cosmos/cosmos-sdk/baseapp"
+	"github.com/cosmos/cosmos-sdk/client/flags"
+	servertypes "github.com/cosmos/cosmos-sdk/server/types"
+	"github.com/cosmos/cosmos-sdk/testutil/network"
+	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
+	"github.com/cosmos/cosmos-sdk/types/module/testutil"
+
+	"github.com/regen-network/regen-ledger/v7/app"
+)
+
+var emptyWasmOpts = []wasmkeeper.Option{}
+
+// NewTestNetworkFixture returns a new simapp AppConstructor for network simulation tests
+func NewTestNetworkFixture() network.TestFixture {
+	dir, err := os.MkdirTemp("", "regen")
+	if err != nil {
+		panic(fmt.Sprintf("failed creating temporary directory: %v", err))
+	}
+	defer os.RemoveAll(dir)
+
+	a := app.NewRegenApp(log.NewNopLogger(), dbm.NewMemDB(), nil, true, 0,
+		simtestutil.NewAppOptionsWithFlagHome(dir), emptyWasmOption)
+
+	appCtr := func(val network.ValidatorI) servertypes.Application {
+		cfg := val.GetAppConfig()
+
+		return app.NewRegenApp(
+			val.GetCtx().Logger, dbm.NewMemDB(), nil, true, 0,
+			simtestutil.NewAppOptionsWithFlagHome(val.GetCtx().Config.RootDir),
+			emptyWasmOpts,
+			baseapp.SetPruning(pruningtypes.NewPruningOptionsFromString(cfg.Pruning)),
+			baseapp.SetMinGasPrices(cfg.MinGasPrices),
+			baseapp.SetChainID(val.GetCtx().Viper.GetString(flags.FlagChainID)),
+		)
+	}
+
+	return network.TestFixture{
+		AppConstructor: appCtr,
+		GenesisState:   a.DefaultGenesis(),
+		EncodingConfig: testutil.TestEncodingConfig{
+			InterfaceRegistry: a.InterfaceRegistry(),
+			Codec:             a.AppCodec(),
+			TxConfig:          a.TxConfig(),
+			Amino:             a.LegacyAmino(),
+		},
+	}
+}

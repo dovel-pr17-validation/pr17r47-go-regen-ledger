@@ -1,0 +1,27 @@
+{
+  "name": "regen-ledger-docs",
+  "version": "0.0.1",
+  "description": "Technical documentation and tutorials for the Regen Ledger blockchain application",
+  "main": "index.js",
+  "authors": {
+    "name": "Regen Network Development",
+    "email": "cory@regen.network"
+  },
+  "repository": "https://github.com/regen-network/regen-ledger/docs",
+  "scripts": { 
+    "predev": "./scripts/pre.sh",
+    "dev": "vuepress dev",
+    "postdev": "./scripts/post.sh",
+    "prebuild": "./scripts/pre.sh",
+    "build": "vuepress build",
+    "postbuild": "./scripts/post.sh"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@snippetors/vuepress-plugin-code-copy": "^1.2.3",
+    "@vuepress/plugin-google-analytics": "^2.0.0-beta.67",
+    "dotenv": "^18.0.5",
+    "vuepress-plugin-sitemap2": "^2.0.0-beta.238",
+    "vuepress-vite": "^2.0.0-beta.67"
+  }
+}

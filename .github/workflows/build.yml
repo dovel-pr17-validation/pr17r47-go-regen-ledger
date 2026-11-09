@@ -1,0 +1,31 @@
+name: Build
+
+# **What it does**: Builds the regen application.
+#
+# **Why we have it**: Ensures the application can be built.
+#
+# **What does it impact**: Application stability.
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - release/v*
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: 'go.mod'
+      - run: make build

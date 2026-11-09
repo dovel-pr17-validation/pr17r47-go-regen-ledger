@@ -1,0 +1,32 @@
+package v1
+
+import (
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+
+	"github.com/regen-network/regen-ledger/x/ecocredit/v4"
+	"github.com/regen-network/regen-ledger/x/ecocredit/v4/base"
+)
+
+var _ sdk.Msg = &MsgUpdateProjectMetadata{}
+
+func (m MsgUpdateProjectMetadata) Route() string { return sdk.MsgTypeURL(&m) }
+
+func (m MsgUpdateProjectMetadata) Type() string { return sdk.MsgTypeURL(&m) }
+
+func (m MsgUpdateProjectMetadata) ValidateBasic() error {
+	if err := base.ValidateProjectID(m.ProjectId); err != nil {
+		return sdkerrors.ErrInvalidRequest.Wrapf("project id: %s", err)
+	}
+
+	if len(m.NewMetadata) > base.MaxMetadataLength {
+		return ecocredit.ErrMaxLimit.Wrapf("metadata: max length is %d", base.MaxMetadataLength)
+	}
+
+	return nil
+}
+
+func (m MsgUpdateProjectMetadata) GetSigners() []sdk.AccAddress {
+	addr, _ := sdk.AccAddressFromBech32(m.Admin)
+	return []sdk.AccAddress{addr}
+}

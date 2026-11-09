@@ -1,0 +1,137 @@
+//nolint:revive,stylecheck
+package keeper
+
+import (
+	"encoding/json"
+	"strconv"
+	"strings"
+	"testing"
+
+	"github.com/regen-network/gocuke"
+	"github.com/stretchr/testify/require"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/gogoproto/jsonpb"
+
+	api "github.com/regen-network/regen-ledger/api/v2/regen/ecocredit/v1"
+	"github.com/regen-network/regen-ledger/types/v2/testutil"
+	"github.com/regen-network/regen-ledger/x/ecocredit/v4/base"
+	types "github.com/regen-network/regen-ledger/x/ecocredit/v4/base/types/v1"
+)
+
+type updateProjectMetadata struct {
+	*baseSuite
+	alice sdk.AccAddress
+	bob   sdk.AccAddress
+	res   *types.MsgUpdateProjectMetadataResponse
+	msg   *types.MsgUpdateProjectMetadata
+	err   error
+}
+
+func TestUpdateProjectMetadata(t *testing.T) {
+	gocuke.NewRunner(t, &updateProjectMetadata{}).Path("./features/msg_update_project_metadata.feature").Run()
+}
+
+func (s *updateProjectMetadata) Before(t gocuke.TestingT) {
+	s.baseSuite = setupBase(t)
+	s.alice = s.addr
+	s.bob = s.addr2
+}
+
+func (s *updateProjectMetadata) TheMessage(a gocuke.DocString) {
+	s.msg = &types.MsgUpdateProjectMetadata{}
+	err := jsonpb.UnmarshalString(a.Content, s.msg)
+	require.NoError(s.t, err)
+}
+
+func (s *updateProjectMetadata) NewMetadataWithLength(a string) {
+	length, err := strconv.ParseInt(a, 10, 64)
+	require.NoError(s.t, err)
+
+	s.msg.NewMetadata = strings.Repeat("x", int(length))
+}
+
+func (s *updateProjectMetadata) TheMessageIsValidated() {
+	s.err = s.msg.ValidateBasic()
+}
+
+func (s *updateProjectMetadata) ExpectNoError() {
+	require.NoError(s.t, s.err)
+}
+
+func (s *updateProjectMetadata) ExpectTheError(a string) {
+	require.EqualError(s.t, s.err, a)
+}
+
+func (s *updateProjectMetadata) ACreditTypeWithAbbreviation(a string) {
+	// TODO: Save for now but credit type should not exist prior to unit test #893
+	err := s.k.stateStore.CreditTypeTable().Save(s.ctx, &api.CreditType{
+		Abbreviation: a,
+		Name:         a,
+	})
+	require.NoError(s.t, err)
+}
+
+func (s *updateProjectMetadata) ACreditClassWithClassId(a string) {
+	creditTypeAbbrev := base.GetCreditTypeAbbrevFromClassID(a)
+
+	err := s.k.stateStore.ClassTable().Insert(s.ctx, &api.Class{
+		Id:               a,
+		Admin:            s.alice,
+		CreditTypeAbbrev: creditTypeAbbrev,
+	})
+	require.NoError(s.t, err)
+}
+
+func (s *updateProjectMetadata) AProjectWithProjectIdAndAdminAlice(a string) {
+	err := s.k.stateStore.ProjectTable().Insert(s.ctx, &api.Project{
+		Id:    a,
+		Admin: s.alice,
+	})
+	require.NoError(s.t, err)
+}
+
+func (s *updateProjectMetadata) AliceAttemptsToUpdateProjectMetadataWithProjectId(a string) {
+	s.res, s.err = s.k.UpdateProjectMetadata(s.ctx, &types.MsgUpdateProjectMetadata{
+		Admin:     s.alice.String(),
+		ProjectId: a,
+	})
+}
+
+func (s *updateProjectMetadata) BobAttemptsToUpdateProjectMetadataWithProjectId(a string) {
+	s.res, s.err = s.k.UpdateProjectMetadata(s.ctx, &types.MsgUpdateProjectMetadata{
+		Admin:     s.bob.String(),
+		ProjectId: a,
+	})
+}
+
+func (s *updateProjectMetadata) AliceAttemptsToUpdateProjectMetadataWithProjectIdAndNewMetadata(a string, b gocuke.DocString) {
+	s.res, s.err = s.k.UpdateProjectMetadata(s.ctx, &types.MsgUpdateProjectMetadata{
+		Admin:       s.alice.String(),
+		ProjectId:   a,
+		NewMetadata: b.Content,
+	})
+}
+
+func (s *updateProjectMetadata) ExpectErrorContains(a string) {
+	require.ErrorContains(s.t, s.err, a)
+}
+
+func (s *updateProjectMetadata) ExpectProjectWithProjectIdAndMetadata(a string, b gocuke.DocString) {
+	project, err := s.stateStore.ProjectTable().GetById(s.ctx, a)
+	require.NoError(s.t, err)
+
+	require.Equal(s.t, b.Content, project.Metadata)
+}
+
+func (s *updateProjectMetadata) ExpectEventWithProperties(a gocuke.DocString) {
+	var event types.EventUpdateProjectMetadata
+	err := json.Unmarshal([]byte(a.Content), &event)
+	require.NoError(s.t, err)
+
+	sdkEvent, found := testutil.GetEvent(&event, s.sdkCtx.EventManager().Events())
+	require.True(s.t, found)
+
+	err = testutil.MatchEvent(&event, sdkEvent)
+	require.NoError(s.t, err)
+}

@@ -1,0 +1,42 @@
+package v1
+
+import (
+	"cosmossdk.io/errors"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+
+	"github.com/regen-network/regen-ledger/x/ecocredit/v4"
+	"github.com/regen-network/regen-ledger/x/ecocredit/v4/base"
+)
+
+var _ sdk.Msg = &MsgRetire{}
+
+// Route implements the LegacyMsg interface.
+func (m MsgRetire) Route() string { return sdk.MsgTypeURL(&m) }
+
+// Type implements the LegacyMsg interface.
+func (m MsgRetire) Type() string { return sdk.MsgTypeURL(&m) }
+
+// ValidateBasic does a sanity check on the provided data.
+func (m *MsgRetire) ValidateBasic() error {
+	if len(m.Credits) == 0 {
+		return sdkerrors.ErrInvalidRequest.Wrap("credits cannot be empty")
+	}
+
+	for i, credits := range m.Credits {
+		if err := credits.Validate(); err != nil {
+			return errors.Wrapf(err, "credits[%d]", i)
+		}
+	}
+
+	if err := base.ValidateJurisdiction(m.Jurisdiction); err != nil {
+		return sdkerrors.ErrInvalidRequest.Wrapf("jurisdiction: %s", err)
+	}
+
+	if len(m.Reason) > base.MaxNoteLength {
+		return ecocredit.ErrMaxLimit.Wrapf("reason: max length %d", base.MaxNoteLength)
+	}
+
+	return nil
+}

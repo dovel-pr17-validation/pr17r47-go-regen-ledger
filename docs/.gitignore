@@ -1,0 +1,18 @@
+# os
+.DS_Store
+
+# vuepress
+dist
+.cache
+.temp
+
+# npm/yarn
+node_modules
+npm-debug.log
+yarn-error.log
+
+# auto-generated
+commands
+features
+modules
+specs
