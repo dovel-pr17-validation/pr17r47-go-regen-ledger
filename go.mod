@@ -16,16 +16,16 @@ require (
 	cosmossdk.io/x/circuit v0.2.0
 	cosmossdk.io/x/evidence v0.2.0
 	cosmossdk.io/x/feegrant v0.2.0
-	cosmossdk.io/x/tx v0.14.0
+	cosmossdk.io/x/tx v1.1.0
 	cosmossdk.io/x/upgrade v0.2.0
 	github.com/CosmWasm/wasmd v0.60.9
-	github.com/CosmWasm/wasmvm/v2 v2.3.5
+	github.com/CosmWasm/wasmvm/v2 v2.3.6
 	github.com/cometbft/cometbft v0.38.21
 	github.com/cometbft/cometbft-db v0.14.1 // indirect
 	github.com/cosmos/cosmos-db v1.1.3
 	github.com/cosmos/cosmos-proto v1.0.0-beta.5 // indirect
 	github.com/cosmos/cosmos-sdk v0.53.6
-	github.com/cosmos/ibc-go/v10 v10.5.0
+	github.com/cosmos/ibc-go/v10 v10.7.0
 	github.com/gorilla/mux v1.8.1
 	github.com/rakyll/statik v0.1.7
 	github.com/regen-network/regen-ledger/api/v2 v2.4.0 // indirect
@@ -36,7 +36,7 @@ require (
 )
 
 require (
-	github.com/cosmos/ibc-go/modules/light-clients/08-wasm/v10 v10.4.0
+	github.com/cosmos/ibc-go/modules/light-clients/08-wasm/v10 v10.5.0
 	github.com/regen-network/regen-ledger/x/ecocredit/v4 v4.0.0-00010101000000-000000000000
 )
 
